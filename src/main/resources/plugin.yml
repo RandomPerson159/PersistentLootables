@@ -1,0 +1,16 @@
+name: PersistentLootables
+version: '${project.version}'
+main: haulidaie.persistentlootables.PersistentLootables
+api-version: '1.20'
+author: Haulidaie
+commands:
+  loot:
+    usage: /<command> action
+    description: Used to edit loot containers
+    permission: persistentlootables.admin
+    permission-message: You don't have the permission to run this command
+
+permissions:
+  persistentlootables.admin:
+    default: op
+    description: Permissions for server operators
