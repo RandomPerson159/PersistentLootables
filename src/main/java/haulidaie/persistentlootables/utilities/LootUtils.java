@@ -85,7 +85,7 @@ public class LootUtils {
 
     public static ChunkData CreateChunkData(Chunk chunk) {
         ChunkData data = new ChunkData();
-        data.Set(chunk, new ArrayList<>(), new ArrayList<>(), 72000.0, (double) System.currentTimeMillis(), true, "", "");
+        data.Set(chunk, new ArrayList<>(), new ArrayList<>(), 60.0, (double) System.currentTimeMillis(), true, "", "");
         SaveChunkData(chunk, data);
 
         return data;
