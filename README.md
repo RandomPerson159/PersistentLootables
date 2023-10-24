@@ -1,15 +1,21 @@
 # Persistent Lootables
 Functionality for time-based lootable containers
 
-# Commands
-/loot create mystery --> Uses the targeted container to create a mystery box <br />
-/loot create individual --> Uses the targeted container to create an individual box <br />
-/loot create everyone --> Uses the targeted container to create a shared everyone box <br />
-/loot check --> Checks the targeted block for lootable data <br />
-/loot set notify [true/false] --> Controls if the lootable should display information to the player <br />
-/loot set time [minutes] --> Sets the time before loot will be generated again (can be set to zero for testing) <br />
-/loot set amount [integer] --> Sets the amount of items to generate from the loot table <br />
-/loot set items --> Opens the loot table for editing <br />
+# Commands for containers
+/ploot create mystery --> Uses the targeted container to create a mystery box <br />
+/ploot create individual --> Uses the targeted container to create an individual box <br />
+/ploot create everyone --> Uses the targeted container to create a shared everyone box <br />
+/ploot check target --> Checks the targeted block for lootable data <br />
+/ploot set notify [true/false] --> Controls if the lootable should display information to the player <br />
+/ploot set time [minutes] --> Sets the time before loot will be generated again (can be set to zero for testing) <br />
+/ploot set amount [integer] --> Sets the amount of items to generate from the loot table <br />
+/ploot set items --> Opens the loot table for editing <br />
+/ploot destroy target --> Removes all lootable data from the target container <br />
+# Commands for chunks (heads/frames)
+/ploot create head --> Makes the targeted head respawn in this chunk <br />
+/ploot create frame --> Makes the trageted frame (get really close) respawn itself and its item in this chunk (if frame is destroyed it will respawn as an invisible one) <br />
+/ploot check chunk --> Checks the current chunk for lootable data <br />
+/ploot destroy chunk --> Destroys all lootable data for the chunk (heads/frames) <br />
 
 # Box Types
 The only difference between them is their default values and generation behaviour <br />
