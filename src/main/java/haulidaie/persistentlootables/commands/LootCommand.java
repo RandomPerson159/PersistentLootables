@@ -286,7 +286,7 @@ public class LootCommand implements CommandExecutor {
 
     public boolean CreateLootFrame(Player p) {
         //Get the frame entity on the target block if it exists
-        RayTraceResult result = p.getWorld().rayTraceEntities(p.getEyeLocation(), p.getLocation().getDirection(), 10);
+        RayTraceResult result = p.getWorld().rayTraceEntities(p.getEyeLocation(), p.getEyeLocation().getDirection(), 20);
 
         if(result == null)
             return false;
