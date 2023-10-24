@@ -1,2 +1,4 @@
 #Default text color for all messages
-textcolor: "#16b405"
+textcolor: "#B623A9"
+#Time in ticks before checking each loaded chunk for loot generation
+updatetime: 1200

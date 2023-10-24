@@ -51,7 +51,7 @@ public final class PersistentLootables extends JavaPlugin {
                         for(Entity e : entities) {
                             if(e instanceof Player p) {
                                 //Send a message to the player
-                                p.sendMessage(textColor+"Loot has mysteriously regenerated around you...");
+                                p.sendMessage(textColor+"Loot has mysteriously reappeared around you...");
                             }
                         }
                     }
@@ -72,30 +72,28 @@ public final class PersistentLootables extends JavaPlugin {
 
         //Update the default text color from the config.yml
         String s = config.getString("textcolor");
-        if(s != null && s.contains("#") && s.length() == 7) {
+        if(s != null && s.contains("#") && s.length() == 7)
             textColor = ChatColor.of(s);
-        } else {
-            System.out.println("Your default textcolor is invalid ❤ (Check config.yml)");
-        }
+
+        //Update the loot check time from config.yml
+        int t = config.getInt("updatetime");
+        if(t < 600)
+            t = 1200; //Default to one minute
 
         //Register commands
-        getCommand("loot").setExecutor(new LootCommand());
+        getCommand("ploot").setExecutor(new LootCommand());
 
         //Register tab completions
-        getCommand("loot").setTabCompleter(new LootTabCompletion());
+        getCommand("ploot").setTabCompleter(new LootTabCompletion());
 
         //Register listeners
         getServer().getPluginManager().registerEvents(new LootListener(), this);
 
+        //Start repeatedly updating loaded chunks
         getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {
             //Update all the lootable chunks for all the worlds on the server
             for(World w : getServer().getWorlds())
                 UpdateLootChunks(w);
-        }, 20, 1200);
-    }
-
-    @Override
-    public void onDisable() {
-        // Plugin shutdown logic
+        }, 20, t);
     }
 }

@@ -1,21 +1,35 @@
 package haulidaie.persistentlootables.utilities;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import haulidaie.persistentlootables.PersistentLootables;
 import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Skull;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
+import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 
 public class LootUtils {
@@ -24,10 +38,12 @@ public class LootUtils {
     public static class HeadData {
         public Location location;
         public BlockData block;
+        public String link;
 
-        public void Set(Location _location, BlockData _block) {
+        public void Set(Location _location, BlockData _block, String _link) {
             location = _location;
             block = _block;
+            link = _link;
         }
     }
 
@@ -35,11 +51,13 @@ public class LootUtils {
         public Location location;
         public ItemStack item;
         public Rotation rotation;
+        public BlockFace face;
 
-        public void Set(Location _location, ItemStack _item, Rotation _rotation) {
+        public void Set(Location _location, ItemStack _item, Rotation _rotation, BlockFace _face) {
             location = _location;
             item = _item;
             rotation = _rotation;
+            face = _face;
         }
     }
 
@@ -53,12 +71,12 @@ public class LootUtils {
         public String noise;
         public String effect;
 
-        public void Set(Chunk _chunk, ArrayList<HeadData> _heads, ArrayList<FrameData> _frames, Double _time, boolean _notify, String _noise, String _effect) {
+        public void Set(Chunk _chunk, ArrayList<HeadData> _heads, ArrayList<FrameData> _frames, Double _time, Double _timeLast, boolean _notify, String _noise, String _effect) {
             chunk = _chunk;
             heads = _heads;
             frames = _frames;
             time = _time;
-            timeLast = _time;
+            timeLast = _timeLast;
             notify = _notify;
             noise = _noise;
             effect = _effect;
@@ -67,7 +85,7 @@ public class LootUtils {
 
     public static ChunkData CreateChunkData(Chunk chunk) {
         ChunkData data = new ChunkData();
-        data.Set(chunk, new ArrayList<HeadData>(), new ArrayList<FrameData>(), 72000.0, false, "", "");
+        data.Set(chunk, new ArrayList<>(), new ArrayList<>(), 72000.0, (double) System.currentTimeMillis(), true, "", "");
         SaveChunkData(chunk, data);
 
         return data;
@@ -124,29 +142,43 @@ public class LootUtils {
         if(chunk == data.chunk) {
             //Create heads
             if(data.heads != null) {
-                for (HeadData h : data.heads) {
-                    h.location.getBlock().setBlockData(h.block);
+                for(HeadData h : data.heads) {
+                    Block b = h.location.getBlock();
+                    b.setBlockData(h.block);
+                    ApplyHeadTexture(b, h.link);
                 }
             }
 
             //Create frames
             if(data.frames != null) {
                 Entity[] entities = chunk.getEntities();
-                ItemFrame e = null;
 
                 for(FrameData f : data.frames) {
+                    ItemFrame e = null;
+
                     //Look for an existing item frame
                     for(Entity existing : entities) {
                         if(existing instanceof ItemFrame existingFrame) {
-                            if(existing.getLocation() == f.location) {
+                            if(existing.getLocation().equals(f.location)) {
                                 e = existingFrame;
+                                break;
                             }
                         }
                     }
 
                     //Create a default blank item frame otherwise
-                    if(e == null)
+                    if(e == null) {
+                        Block at = f.location.getBlock();
+                        Material typeAt = at.getType();
+                        Block attached = f.location.getBlock().getRelative(f.face);
+                        Material typeAttached = attached.getType();
+
+                        if((typeAt != Material.AIR && typeAt != Material.WATER) || (typeAttached == Material.AIR || typeAttached == Material.WATER))
+                            return;
+
                         e = chunk.getWorld().spawn(f.location, ItemFrame.class);
+                        e.setVisible(false);
+                    }
 
                     //Set the item frame's values
                     e.setItem(f.item);
@@ -165,8 +197,8 @@ public class LootUtils {
 
             os.writeInt(items.size());
 
-            for(int i = 0; i < items.size(); i++) {
-                os.writeObject(items.get(i));
+            for(ItemStack item : items) {
+                os.writeObject(item);
             }
 
             os.flush();
@@ -216,9 +248,10 @@ public class LootUtils {
 
             os.writeInt(heads.size());
 
-            for(int i = 0; i < heads.size(); i++) {
-                os.writeObject(heads.get(i).location);
-                os.writeUTF(heads.get(i).block.getAsString());
+            for(HeadData head : heads) {
+                os.writeObject(head.location);
+                os.writeUTF(head.block.getAsString());
+                os.writeUTF(head.link);
             }
 
             os.flush();
@@ -229,11 +262,9 @@ public class LootUtils {
             os.close();
 
             return data;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (IOException ignored) {}
 
-        //return "";
+        return "";
     }
 
     public static ArrayList<HeadData> DecodeHeads(String data) {
@@ -254,17 +285,16 @@ public class LootUtils {
                 HeadData hd = new HeadData();
                 hd.location = (Location) is.readObject();
                 hd.block = Bukkit.createBlockData(is.readUTF());
+                hd.link = is.readUTF();
                 heads.add(hd);
             }
 
             is.close();
 
             return heads;
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (IOException | ClassNotFoundException ignored) {}
 
-        //return null;
+        return null;
     }
 
     public static String EncodeFrames(List<FrameData> frames) {
@@ -276,10 +306,11 @@ public class LootUtils {
 
             os.writeInt(frames.size());
 
-            for(int i = 0; i < frames.size(); i++) {
-                os.writeObject(frames.get(i).location);
-                os.writeObject(frames.get(i).item);
-                os.writeObject(frames.get(i).rotation);
+            for(FrameData frame : frames) {
+                os.writeObject(frame.location);
+                os.writeObject(frame.item);
+                os.writeObject(frame.rotation);
+                os.writeObject(frame.face);
             }
 
             os.flush();
@@ -290,11 +321,9 @@ public class LootUtils {
             os.close();
 
             return data;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (IOException ignored) {}
 
-        //return "";
+        return "";
     }
 
     public static ArrayList<FrameData> DecodeFrames(String data) {
@@ -316,17 +345,63 @@ public class LootUtils {
                 fd.location = (Location) is.readObject();
                 fd.item = (ItemStack) is.readObject();
                 fd.rotation = (Rotation) is.readObject();
+                fd.face = (BlockFace) is.readObject();
                 frames.add(fd);
             }
 
             is.close();
 
             return frames;
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (IOException | ClassNotFoundException ignored) {}
 
-        //return null;
+        return null;
+    }
+
+    public static void ApplyHeadTexture(Block b, String link) {
+        Material type = b.getType();
+
+        if(type != Material.PLAYER_HEAD && type != Material.PLAYER_WALL_HEAD)
+            return;
+
+        Skull head = (Skull) b.getState();
+        GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+        profile.getProperties().put("textures", new Property("textures", link));
+
+        try {
+            Field field = head.getClass().getDeclaredField("profile");
+            field.setAccessible(true);
+
+            field.set(head, profile);
+
+            head.update();
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+    }
+
+    public static String GetHeadTexture(Block b) {
+        Material type = b.getType();
+
+        if(type != Material.PLAYER_HEAD && type != Material.PLAYER_WALL_HEAD)
+            return "";
+
+        Skull head = (Skull) b.getState();
+
+        try {
+            Field field = head.getClass().getDeclaredField("profile");
+            field.setAccessible(true);
+
+            GameProfile profile = (GameProfile) field.get(head);
+            Collection<Property> properties = profile.getProperties().get("textures");
+            String link = "";
+
+            for(Property p : properties) {
+                if(p.getName().equals("textures"))
+                    link = p.getValue();
+            }
+
+            return link;
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+
+        return "";
     }
 
     public static void SaveLoot(TileState tState, ArrayList<ItemStack> items) {

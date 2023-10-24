@@ -5,6 +5,7 @@ import haulidaie.persistentlootables.utilities.LootUtils;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
@@ -18,6 +19,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
+
+import java.lang.reflect.Field;
 
 public class LootCommand implements CommandExecutor {
     private final PersistentLootables plugin = PersistentLootables.GetInstance();
@@ -81,7 +84,7 @@ public class LootCommand implements CommandExecutor {
                     }
                     case everyone -> {
                         dAmount = 27;
-                        dTime = 20.0;
+                        dTime = 60.0;
                         dNotify = false;
                     }
                 }
@@ -224,7 +227,7 @@ public class LootCommand implements CommandExecutor {
             NamespacedKey timeKey = new NamespacedKey(plugin, "lootTime");
             NamespacedKey notifyKey = new NamespacedKey(plugin, "lootNotify");
 
-            if (c.has(invKey, PersistentDataType.STRING)) {
+            if(c.has(invKey, PersistentDataType.STRING)) {
                 Block b = tState.getLocation().getBlock();
 
                 p.sendMessage(plugin.textColor + "Lootable Check ==================" + "\n"
@@ -245,13 +248,13 @@ public class LootCommand implements CommandExecutor {
         Chunk chunk = p.getLocation().getChunk();
         LootUtils.ChunkData data = LootUtils.LoadChunkData(chunk);
 
-        if (data != null) {
+        if(data != null) {
             p.sendMessage(plugin.textColor + "Chunk Check ==================" + "\n"
                     + "Coords:    " + chunk.getX() + " 0 " + chunk.getZ() + "\n"
-                    + "Heads:       " + data.heads.size() + " blocks\n"
+                    + "Heads:     " + data.heads.size() + " blocks\n"
                     + "Frames:    " + data.frames.size() + " entities\n"
-                    + "Time:       " + data.time + " minutes\n"
-                    + "Notify:     " + data.notify + "\n");
+                    + "Time:        " + data.time + " minutes\n"
+                    + "Notify:      " + data.notify + "\n");
 
             return true;
         }
@@ -270,7 +273,7 @@ public class LootCommand implements CommandExecutor {
                 cd = LootUtils.CreateChunkData(chunk);
 
             LootUtils.HeadData hd = new LootUtils.HeadData();
-            hd.Set(ts.getLocation(), ts.getBlockData());
+            hd.Set(ts.getLocation(), ts.getBlockData(), LootUtils.GetHeadTexture(ts.getBlock()));
             cd.heads.add(hd);
 
             LootUtils.SaveChunkData(chunk, cd);
@@ -299,12 +302,13 @@ public class LootCommand implements CommandExecutor {
             LootUtils.ChunkData cd = LootUtils.LoadChunkData(chunk);
             ItemStack item = frame.getItem();
             Rotation itemRotation = frame.getRotation();
+            BlockFace frameFacing = frame.getAttachedFace();
 
             if (cd == null)
                 cd = LootUtils.CreateChunkData(chunk);
 
             LootUtils.FrameData fd = new LootUtils.FrameData();
-            fd.Set(frame.getLocation(), item, itemRotation);
+            fd.Set(frame.getLocation(), item, itemRotation, frameFacing);
             cd.frames.add(fd);
 
             LootUtils.SaveChunkData(chunk, cd);
@@ -546,7 +550,7 @@ public class LootCommand implements CommandExecutor {
                 }
             }
 
-            p.sendMessage(plugin.textColor + "Unknown loot command ❤\nSub-commands: /loot (create, set, check, destroy)");
+            p.sendMessage(plugin.textColor + "Unknown loot command ❤\nSub-commands: /ploot (create, set, check, destroy)");
             return true;
         }
 
