@@ -15,6 +15,8 @@ Functionality for time-based lootable containers
 /ploot create head --> Makes the targeted head respawn in this chunk <br />
 /ploot create frame --> Makes the trageted frame (get really close) respawn itself and its item in this chunk (if frame is destroyed it will respawn as an invisible one) <br />
 /ploot check chunk --> Checks the current chunk for lootable data <br />
+/ploot set chunk time [minutes] --> Sets the time before the chunk will regenerate heads and frames <br />
+/ploot set chunk notify [true/false] --> Controls if the chunk should notify players inside when it generates loot <br />
 /ploot destroy chunk --> Destroys all lootable data for the chunk (heads/frames) <br />
 
 # Box Types
