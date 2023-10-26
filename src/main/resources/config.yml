@@ -2,3 +2,5 @@
 textcolor: "#B623A9"
 #Time in ticks before checking each loaded chunk for loot generation
 updatetime: 1200
+#Percentage to vary loot respawn times (0-80)
+randompercent: 20

@@ -16,10 +16,13 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Random;
+
 public final class PersistentLootables extends JavaPlugin {
     private static PersistentLootables instance;
     public ChatColor textColor = ChatColor.WHITE;
     public String lootTitle = ChatColor.BOLD + "Loot Table";
+    public int randomPercent = 0;
 
     public static PersistentLootables GetInstance() {
         return instance;
@@ -38,9 +41,16 @@ public final class PersistentLootables extends JavaPlugin {
             if(data != null) {
                 Long milliTime = Math.round(data.time * 60 * 1000);
                 Long currentTime = System.currentTimeMillis();
+                Double last = data.timeLast;
+
+                if(randomPercent > 0) {
+                    Random r = new Random();
+                    Double p = r.nextDouble(-randomPercent, randomPercent);
+                    last += data.time*p;
+                }
 
                 //Check if the required time has elapsed for regeneration
-                if(currentTime >= data.timeLast+milliTime) {
+                if(currentTime >= last+milliTime) {
                     LootUtils.ApplyChunkData(chunk, data);
                     data.timeLast = currentTime.doubleValue();
                     LootUtils.SaveChunkData(chunk, data);
@@ -79,6 +89,10 @@ public final class PersistentLootables extends JavaPlugin {
         int t = config.getInt("updatetime");
         if(t < 600)
             t = 1200; //Default to one minute
+
+        int r = config.getInt("randompercent");
+        if(r > 0)
+            randomPercent = r;
 
         //Register commands
         getCommand("ploot").setExecutor(new LootCommand());
