@@ -2,20 +2,33 @@ package haulidaie.persistentlootables.listeners;
 
 import haulidaie.persistentlootables.PersistentLootables;
 import haulidaie.persistentlootables.utilities.LootUtils;
+import org.bukkit.Chunk;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import java.util.*;
+
+import static haulidaie.persistentlootables.utilities.LootUtils.DecodeFrames;
+import static haulidaie.persistentlootables.utilities.LootUtils.DecodeHeads;
 
 public class LootListener implements Listener {
     private final PersistentLootables plugin = PersistentLootables.GetInstance();
@@ -157,6 +170,117 @@ public class LootListener implements Listener {
                 LootUtils.SaveLoot(tState, prunedItems);
                 p.sendMessage(plugin.textColor + "Loot contents saved ❤");
             }
+        }
+    }
+
+    @EventHandler
+    public void onHeadBreak(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        Material type = block.getType();
+        boolean operator = e.getPlayer().hasPermission("persistentlootables.admin");
+
+        if(type == Material.PLAYER_HEAD || type == Material.PLAYER_WALL_HEAD) {
+            Chunk chunk = block.getChunk();
+            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
+            NamespacedKey keyHeads = new NamespacedKey(plugin, "lootHeads");
+            boolean found = false;
+
+            if(pdc.has(keyHeads, PersistentDataType.STRING)) {
+                ArrayList<LootUtils.HeadData> heads = DecodeHeads(pdc.get(keyHeads, PersistentDataType.STRING));
+
+                if(heads != null) {
+                    for(LootUtils.HeadData h : heads) {
+                        if(h.location.equals(block.getLocation())) {
+                            //Head data found! (Player is breaking a lootable head)
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if(!operator && !found)
+                e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onFrameDamage(EntityDamageByEntityEvent e) {
+        Entity target = e.getEntity();
+        boolean operator = e.getDamager().hasPermission("persistentlootables.admin");
+
+        if(target instanceof ItemFrame) {
+            Chunk chunk = target.getLocation().getChunk();
+            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
+            NamespacedKey keyHeads = new NamespacedKey(plugin, "lootFrames");
+            boolean found = false;
+
+            if(pdc.has(keyHeads, PersistentDataType.STRING)) {
+                ArrayList<LootUtils.FrameData> frames = DecodeFrames(pdc.get(keyHeads, PersistentDataType.STRING));
+
+                if(frames != null) {
+                    for(LootUtils.FrameData f : frames) {
+                        if(f.location.equals(target.getLocation())) {
+                            //Frame data found! (Player is breaking a lootable frame)
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if(!operator && !found)
+                e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onFrameInteract(PlayerInteractEntityEvent e) {
+        Player p = e.getPlayer();
+        Entity target = e.getRightClicked();
+        boolean operator = p.hasPermission("persistentlootables.admin");
+
+        if(target instanceof ItemFrame) {
+            Chunk chunk = target.getLocation().getChunk();
+            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
+            NamespacedKey keyHeads = new NamespacedKey(plugin, "lootFrames");
+            boolean found = false;
+
+            if(pdc.has(keyHeads, PersistentDataType.STRING)) {
+                ArrayList<LootUtils.FrameData> frames = DecodeFrames(pdc.get(keyHeads, PersistentDataType.STRING));
+
+                if(frames != null) {
+                    for(LootUtils.FrameData f : frames) {
+                        if(f.location.equals(target.getLocation())) {
+                            //Frame data found! (Player is breaking a lootable frame)
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if(!operator && !found)
+                e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onFrameBreak(HangingBreakByEntityEvent e) {
+        HangingBreakEvent.RemoveCause cause = e.getCause();
+
+        if(cause != HangingBreakEvent.RemoveCause.ENTITY) {
+            e.setCancelled(true);
+            return;
+        }
+
+        Entity remover = e.getRemover();
+        Entity target = e.getEntity();
+        boolean operator = remover.hasPermission("persistentlootables.admin");
+
+        if(target instanceof ItemFrame) {
+            if(!operator)
+                e.setCancelled(true);
         }
     }
 }
