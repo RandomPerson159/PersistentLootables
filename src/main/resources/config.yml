@@ -1,6 +1,14 @@
 #Default text color for all messages
 textcolor: "#B623A9"
+
 #Time in ticks before checking each loaded chunk for loot generation
 updatetime: 1200
+
 #Percentage to vary loot respawn times (0-80)
 randompercent: 20
+
+#Protect every unlootable block (players without perms can't interact, permed players must use /bypassprotect)
+protect: true
+
+#Actions to allow when protect is true
+allow_explosions: false

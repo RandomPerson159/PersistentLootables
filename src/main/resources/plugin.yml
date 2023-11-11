@@ -6,11 +6,16 @@ author: Haulidaie
 commands:
   ploot:
     usage: /<command> action
-    description: Used to edit loot containers
+    description: Used to edit loot and lootable areas
     permission: persistentlootables.admin
-    permission-message: You don't have the permission to run this command
+    permission-message: You don't have that power here!
+  bypassprotect:
+    usage: /<command>
+    description: Admins can bypass protection handled by PersistentLootables
+    permission: persistentlootables.admin
+    permission-message: You don't have that power here!
 
 permissions:
   persistentlootables.admin:
     default: op
-    description: Permissions for server operators
+    description: Permissions for server designers and operators

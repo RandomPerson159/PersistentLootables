@@ -1,31 +1,69 @@
 package haulidaie.persistentlootables;
 
+import haulidaie.persistentlootables.commands.BypassCommand;
 import haulidaie.persistentlootables.commands.LootCommand;
 import haulidaie.persistentlootables.commands.LootTabCompletion;
 import haulidaie.persistentlootables.listeners.LootListener;
+import haulidaie.persistentlootables.listeners.ProtectListener;
 import haulidaie.persistentlootables.utilities.LootUtils;
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.UUID;
 
 public final class PersistentLootables extends JavaPlugin {
     private static PersistentLootables instance;
     public ChatColor textColor = ChatColor.WHITE;
     public String lootTitle = ChatColor.BOLD + "Loot Table";
     public int randomPercent = 0;
+    public ArrayList<Material> allowedInteractables = new ArrayList<>();
+
+    private boolean protect = false;
+    private boolean allowExplosions = false;
+    private ArrayList<UUID> bypassers = new ArrayList<>();
 
     public static PersistentLootables GetInstance() {
         return instance;
+    }
+
+    public boolean Protect() {
+        return protect;
+    }
+    public boolean AllowExplosions() {
+        return allowExplosions;
+    }
+
+    public boolean IsBypasser(Entity e) {
+        if(e instanceof Player p) {
+            UUID id = p.getUniqueId();
+
+            if (bypassers.contains(id))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void AddBypasser(Player p) {
+        if(p.hasPermission("persistentlootables.admin")) {
+            UUID id = p.getUniqueId();
+
+            if(bypassers.contains(id))
+                return;
+
+            bypassers.add(id);
+        }
+    }
+
+    public void RemoveBypasser(Player p) {
+        bypassers.remove(p.getUniqueId());
     }
 
     public void UpdateLootChunks(World w) {
@@ -77,8 +115,7 @@ public final class PersistentLootables extends JavaPlugin {
 
         //Load the config.yml file
         FileConfiguration config = getConfig();
-        config.options().copyDefaults(true);
-        saveConfig();
+        saveDefaultConfig();
 
         //Update the default text color from the config.yml
         String s = config.getString("textcolor");
@@ -90,18 +127,41 @@ public final class PersistentLootables extends JavaPlugin {
         if(t < 600)
             t = 1200; //Default to one minute
 
+        //Update random percentage variation maximum
         int r = config.getInt("randompercent");
         if(r > 0)
             randomPercent = r;
 
+        //Update the protection options
+        protect = config.getBoolean("protect");
+        allowExplosions = config.getBoolean("allow_explosions");
+
+        //Add all the interactables to allow player access to
+        allowedInteractables.add(Material.CRAFTING_TABLE);
+        allowedInteractables.add(Material.CHEST);
+        allowedInteractables.add(Material.TRAPPED_CHEST);
+        allowedInteractables.add(Material.BARREL);
+        allowedInteractables.add(Material.SHULKER_BOX);
+        allowedInteractables.add(Material.FURNACE);
+        allowedInteractables.add(Material.BLAST_FURNACE);
+        allowedInteractables.add(Material.SMOKER);
+        allowedInteractables.add(Material.CAMPFIRE);
+        allowedInteractables.add(Material.SOUL_CAMPFIRE);
+        allowedInteractables.add(Material.SMITHING_TABLE);
+        allowedInteractables.add(Material.LOOM);
+
         //Register commands
         getCommand("ploot").setExecutor(new LootCommand());
+        getCommand("bypassprotect").setExecutor(new BypassCommand());
 
         //Register tab completions
         getCommand("ploot").setTabCompleter(new LootTabCompletion());
 
         //Register listeners
         getServer().getPluginManager().registerEvents(new LootListener(), this);
+
+        if(protect)
+            getServer().getPluginManager().registerEvents(new ProtectListener(), this);
 
         //Start repeatedly updating loaded chunks
         getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {

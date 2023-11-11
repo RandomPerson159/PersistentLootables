@@ -2,13 +2,11 @@ package haulidaie.persistentlootables.commands;
 
 import haulidaie.persistentlootables.PersistentLootables;
 import haulidaie.persistentlootables.utilities.LootUtils;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,8 +17,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
-
-import java.lang.reflect.Field;
 
 public class LootCommand implements CommandExecutor {
     private final PersistentLootables plugin = PersistentLootables.GetInstance();

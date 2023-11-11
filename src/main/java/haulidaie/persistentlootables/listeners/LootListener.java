@@ -15,12 +15,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -177,7 +175,7 @@ public class LootListener implements Listener {
     public void onHeadBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         Material type = block.getType();
-        boolean operator = e.getPlayer().hasPermission("persistentlootables.admin");
+        boolean operator = plugin.IsBypasser(e.getPlayer());
 
         if(type == Material.PLAYER_HEAD || type == Material.PLAYER_WALL_HEAD) {
             Chunk chunk = block.getChunk();
@@ -207,38 +205,7 @@ public class LootListener implements Listener {
     @EventHandler
     public void onFrameDamage(EntityDamageByEntityEvent e) {
         Entity target = e.getEntity();
-        boolean operator = e.getDamager().hasPermission("persistentlootables.admin");
-
-        if(target instanceof ItemFrame) {
-            Chunk chunk = target.getLocation().getChunk();
-            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
-            NamespacedKey keyHeads = new NamespacedKey(plugin, "lootFrames");
-            boolean found = false;
-
-            if(pdc.has(keyHeads, PersistentDataType.STRING)) {
-                ArrayList<LootUtils.FrameData> frames = DecodeFrames(pdc.get(keyHeads, PersistentDataType.STRING));
-
-                if(frames != null) {
-                    for(LootUtils.FrameData f : frames) {
-                        if(f.location.equals(target.getLocation())) {
-                            //Frame data found! (Player is breaking a lootable frame)
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if(!operator && !found)
-                e.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onFrameInteract(PlayerInteractEntityEvent e) {
-        Player p = e.getPlayer();
-        Entity target = e.getRightClicked();
-        boolean operator = p.hasPermission("persistentlootables.admin");
+        boolean operator = plugin.IsBypasser(e.getDamager());
 
         if(target instanceof ItemFrame) {
             Chunk chunk = target.getLocation().getChunk();
@@ -276,7 +243,7 @@ public class LootListener implements Listener {
 
         Entity remover = e.getRemover();
         Entity target = e.getEntity();
-        boolean operator = remover.hasPermission("persistentlootables.admin");
+        boolean operator = plugin.IsBypasser(remover);
 
         if(target instanceof ItemFrame) {
             if(!operator)
